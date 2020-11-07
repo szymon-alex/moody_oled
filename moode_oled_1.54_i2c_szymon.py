@@ -1,7 +1,10 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # AUDIOPHONICS RASPDAC MINI OLED Script #
-# 11 Septembre 2018 
+# 11 Septembre 2018
+# Adapted by Szymon Aleksejew
+# 2019
+
 from __future__ import unicode_literals
 import sys
 reload(sys)
@@ -26,7 +29,6 @@ from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import sh1106
 import RPi.GPIO as GPIO
-#serial = spi(port=0, device=0, gpio_DC=27, gpio_RST=24)
 serial = i2c(port=1, address=0x3C)
 device = sh1106(serial, rotate=0)
 
@@ -48,7 +50,6 @@ font_ip			= make_font('msyh.ttf', 15)
 font_time		= make_font('msyh.ttf', 15)
 font_20			= make_font('msyh.ttf', 18)
 font_date		= make_font('arial.ttf', 25)
-#font_logo		= make_font('msyh.ttf', 24)
 font_logo		= make_font('arial.ttf', 21)
 font_32			= make_font('arial.ttf', 32)
 awesomefont		= make_font("fontawesome-webfont.ttf", 14)
@@ -96,10 +97,10 @@ shift		= 0
 title_image     = Image.new('L', (oled_width, title_height))
 title_offset    = 0
 current_page = 0
-vol_val_store = 0
+vol_val_store = '100' #[sz] do not enter val change procedure
 screen_sleep = 0
 timer_vol = 0
-input_counter = 0
+#input_counter = 0
 screensave = 3
 
 # Socket 
@@ -112,9 +113,9 @@ rcv = soc.recv(mpd_bufsize)
 shift		= 1
 music_file	= ""
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-GPIO.setup(22, GPIO.IN,pull_up_down=GPIO.PUD_UP)
+#GPIO.setmode(GPIO.BCM)
+#GPIO.setwarnings(False)
+#GPIO.setup(22, GPIO.IN,pull_up_down=GPIO.PUD_UP)
 spdif=False;
 
 def InputSelect():
@@ -127,18 +128,8 @@ def InputSelect():
 	os.system("amixer sset -c 0 'I2S/SPDIF Select' I2S")
 
 
-def optionButPress(value):
-    global startt,endt
-    if GPIO.input(22) == 1:
-        startt = time.time()
-    if GPIO.input(22) == 0:
-        endt = time.time()
-	InputSelect()
-
-#GPIO.add_event_detect(22, GPIO.BOTH, callback=optionButPress, bouncetime=200)
-#os.system("amixer sset -c 1 'I2S/SPDIF Select' I2S")
 with canvas(device) as draw:
-	draw.text((3, 10),"Audiophonics", font=font_logo,fill="white")
+	draw.text((14, 15),"Szymon Pi", font=font_logo,fill="white")
 time.sleep(2)
 
 try:
@@ -161,12 +152,10 @@ try:
 		bit_val		= ""
 		samp_val	= ""
 		time_val	= time_min = time_sec = vol_val = audio_val = 0
-		#jsonapi	= json.load(urllib2.urlopen('http://127.0.0.1:3000/api/v1/getstate'))
-		
 
 		for line in range(0,len(state_list)):
 			if state_list[line].startswith("state: "):     info_state      = state_list[line].replace("state: ", "")
-			if state_list[line].startswith("elapsed: "):   #info_elapsed    = float(state_list[line].replace("elapsed: ", ""))
+			if state_list[line].startswith("elapsed: "):     #info_elapsed    = float(state_list[line].replace("elapsed: ", ""))
 
 				time_val   = float(state_list[line].replace("elapsed: ", ""))
 				time_bar = time_val
@@ -178,8 +167,10 @@ try:
 			if state_list[line].startswith("time: "):      info_duration   = float(state_list[line].split(":")[2])
 
 			# Volume			
-			if state_list[line].startswith("volume: "):     vol_val      = state_list[line].replace("volume: ", "")
-			# Volume NULL
+                        # vol_val      = state_list[line].replace("volume: ", "")
+                        vol_val = '100'
+
+                        # Volume NULL
 			if vol_val == "" : 
 				vol_val = "0"
 				subprocess.Popen(['mpc', 'volume', '0' ])
@@ -252,13 +243,6 @@ try:
 			if song_list[song_line].startswith("Name: "):      info_name      = song_list[song_line].replace("Name: ", "") 
 		
 		
-		#Counter because Getinput slow down the scrolling
-		if input_counter == 10 :
-			#dac_input = str(GetInput())
-			input_counter = 0
-		else :
-			input_counter = input_counter + 1
-				
 		# Volume change screen
 		if vol_val != vol_val_store : timer_vol = 20
 		if timer_vol > 0 :
@@ -278,25 +262,6 @@ try:
 			time.sleep(0.1)
 	
 
-		# SPDIF screen
-		
-		#elif(dac_input == "'SPDIF'"):
-		#	if screen_sleep < 600 :
-		#		with canvas(device) as draw:
-		#			draw.text((20, -4),"SPDIF", font=font_title,fill="white")
-		#			draw.text((45, 33), vol_val, font=font_title, fill="white")
-		#			draw.text((15, 41), text="\uf028", font=awesomefont, fill="white")
-		#			# Volume Bar
-		#			draw.rectangle((120,0,127,62), outline=1, fill=0)
-		#			Volume_bar = (58 - (int(float(vol_val)) / 1.785))
-		#			draw.rectangle((122,Volume_bar,125,60), outline=0, fill=1)				
-		#		time.sleep(0.5)	
-		#		screen_sleep = screen_sleep + 1
-		#	else : 
-		#		with canvas(device) as draw:
-		#			draw.text((0, 48), ".", font=font_time, fill="white")
-		#		time.sleep(1)
-			
 
 		# Play screen
 		elif info_state != "stop":
@@ -327,8 +292,6 @@ try:
 				music_file  = info_file;
 				# Generate title image
 	
-				#if title_width < artist_width:
-				#	title_width = artist_width
 				bit_val = bytes(bit_val)	#2018.1.5
 				samp_val = bytes(samp_val)	#2018.1.7				
 				artist_offset    = 10;
@@ -388,10 +351,10 @@ try:
 						draw.text((0, 52), text="\uf04c", font=awesomefont, fill="white")
 					else:
 						draw.text((1, 48), time_val, font=font_time, fill="white")
-					#draw.text((58, 48), text="\uf001", font=awesomefont, fill="white")	
+					draw.text((58, 48), text="\uf001", font=awesomefont, fill="white")	
 					draw.rectangle((0,45,time_bar,47), outline=0, fill=1)
 					draw.text((85, 51), text="\uf028", font=awesomefont, fill="white")	
-					#draw.text((101, 48), vol_val, font=font_time, fill="white")
+					draw.text((101, 48), vol_val, font=font_time, fill="white")
 				
 					current_page = current_page + 1
 					artist_offset = 10
@@ -412,7 +375,7 @@ try:
 					else:
 						draw.text((1, 48), time_val, font=font_time, fill="white")
 					draw.rectangle((0,45,time_bar,47), outline=0, fill=1)
-					#draw.text((101, 48), vol_val, font=font_time, fill="white")
+					draw.text((101, 48), vol_val, font=font_time, fill="white")
 					draw.text((85, 51), text="\uf028", font=awesomefont, fill="white")
 					current_page = current_page + 1
 					
@@ -429,7 +392,6 @@ try:
 			#ip = str(GetLANIP())
 			if screen_sleep < 20000 :
 				with canvas(device) as draw:
-					#draw.text((1, -6),"Volumio", font=font_logo,fill="white")
 					if ip != "":
 						draw.text((18, 29), ip, font=font_ip, fill="white")
 						draw.text((1, 32), link, font=awesomefont, fill="white")
@@ -437,9 +399,9 @@ try:
 						draw.text((18, 29),time.strftime("192.168.211.1"), font=font_ip, fill="white")
 						draw.text((1, 32), wifi, font=awesomefont, fill="white")
 
-					#draw.text((2,-6),time.strftime("%X"), font=font_32,fill="white")
+					draw.text((2,-6),time.strftime("%X"), font=font_32,fill="white")
 
-					#draw.text((19, 48), vol_val, font=font_time, fill="white")
+					draw.text((19, 48), vol_val, font=font_time, fill="white")
 					draw.text((2, 51), text="\uf028", font=awesomefont, fill="white")
 				screen_sleep = screen_sleep + 1
 			else :
