@@ -1,0 +1,13 @@
+[Unit]
+Description=OLED Display Service
+After=mpd.service
+
+[Service]
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/python3 /home/pi/oled/moode_oled_1.54_i2c_szymon_py3.py
+StandardOutput=null
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

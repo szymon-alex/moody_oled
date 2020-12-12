@@ -1,0 +1,17 @@
+
+enable i2c interface:
+sudo raspi-config
+
+sudo usermod -a -G spi,gpio,i2c pi
+
+LUMA
+sudo apt-get update
+sudo apt-get install python3 python3-pip python3-pil libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff5 -y
+sudo -H pip3 install luma.oled
+
+sudo pip install Pillow
+
+SERVICE START
+sudo cp oled.service /etc/systemd/system/
+sudo systemctl enable oled.service
+sudo systemctl start oled.service
