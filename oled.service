@@ -4,7 +4,8 @@ After=mpd.service
 
 [Service]
 ExecStartPre=/bin/sleep 10
-ExecStart=/usr/bin/python3 /home/pi/oled/moode_oled_1.54_i2c_szymon_py3.py
+ExecStart=/usr/bin/python3 /home/pi/GIT/moody_oled/moode_oled_1.54_i2c_szymon.py
+ExecStop=/bin/kill -SIGINT $MAINPID
 StandardOutput=null
 Type=simple
 Restart=always
