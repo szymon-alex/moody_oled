@@ -1,11 +1,7 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # AUDIOPHONICS RASPDAC MINI OLED Script #
-# 11 Septembre 2018
-# Adapted by Szymon Aleksejew
-# 2019
-# 2020 - Changed for Python3 
-
+# 11 Septembre 2018 
 from __future__ import unicode_literals
 import sys
 #reload(sys)
@@ -13,6 +9,7 @@ import sys
 
 import os
 import time
+import signal
 import socket
 #import smbus
 #bus = smbus.SMBus(1)
@@ -39,6 +36,14 @@ title_height    = 40
 scroll_unit     = 2
 oled_width      = 128
 oled_height     = 64
+
+class GracefulKiller:
+    kill_now = False
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+    def exit_gracefully(self,signum, frame):
+        self.kill_now = True
 
 def make_font(name, size):
     font_path = os.path.abspath(os.path.join(
@@ -145,7 +150,8 @@ with canvas(device) as draw:
 time.sleep(2)
 
 try:
-    while True:
+    killer = GracefulKiller()
+    while not killer.kill_now:
         soc.send('currentsong\n'.encode())
         buff  = soc.recv(mpd_bufsize).decode("utf-8")
         song_list = buff.splitlines()
@@ -457,10 +463,13 @@ try:
                     draw.text((screensave, 45), ".", font=font_time, fill="white")
                 time.sleep(1)                           
             time.sleep(0.1)
+            
 except Exception as e:
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print(exc_type, fname, exc_tb.tb_lineno)
 
-
+with canvas(device) as draw:
+    draw.text((14, 15),"Shutdown", font=font_logo,fill="white")
+    time.sleep(5)
 
